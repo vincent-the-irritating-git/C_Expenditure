@@ -11,6 +11,7 @@
 
 char** string_array;
 int total_strings=0;
+char* shop_names[3] = { "TESCO STORES","ALDI","CO-OPERATIVE" };
 
 char* copy_string(char temp[], int temp_size) {
 	char* new_word= malloc(sizeof(char) * temp_size);
@@ -89,9 +90,6 @@ int main(int argc, char** argv) {
 	show_strings();
 	free(string_array);
 	printf("-------------------------------------------------------------------");
-	load_strings("C:/Users/Wiiiill/Documents/CSVs/Oscar.csv");
-	show_strings();
-	free(string_array);
 
 	return 0;
 }
