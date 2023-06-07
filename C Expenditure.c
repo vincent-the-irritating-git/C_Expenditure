@@ -15,7 +15,7 @@
 char** string_array;
 int total_strings=0;
 char* shop_names[3] = { "TESCO STORES","ALDI","CO-OPERATIVE" };
-/* I don't this does anything anymore. Looks like it was deprecated*/
+/* I don't this does anything anymore. Looks like it was deprecated*/ 
 //char* copy_string(char temp[], int temp_size) {
 //	char* new_word= malloc(sizeof(char) * temp_size);
 //	strcpy(new_word, temp);
