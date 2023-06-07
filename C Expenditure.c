@@ -1,23 +1,26 @@
 #ifdef _MSC_VER
 #define _CRT_SECURE_NO_WARNINGS
 #endif
-#define STRING_COUNTER_SIZE 10000
 #include <stdio.h>
+#include <stdlib.h>
+#include <string.h>
+#include <math.h>>
+
 //TO DO
-//the while if bit needs rejigging
-//the row count isn't working properly, it's -1
-//the bank data only works properly because it ends with a newline not eof
-//delete the hacky post add, breaking program
+//atof not working like it should
+//food bit hard-coded, want it to find column name from header
+//if debit is blank ignore line
+//do ternary to get the line columns lined up
 
 char** string_array;
 int total_strings=0;
 char* shop_names[3] = { "TESCO STORES","ALDI","CO-OPERATIVE" };
-
-char* copy_string(char temp[], int temp_size) {
-	char* new_word= malloc(sizeof(char) * temp_size);
-	strcpy(new_word, temp);
-	return new_word;
-}
+/* I don't this does anything anymore. Looks like it was deprecated*/
+//char* copy_string(char temp[], int temp_size) {
+//	char* new_word= malloc(sizeof(char) * temp_size);
+//	strcpy(new_word, temp);
+//	return new_word;
+//}
 
 void blank_array(char temp[]) {
 	temp[0] = '\0';
@@ -80,16 +83,72 @@ void load_strings(char* file_name) {
 }
 
 void show_strings() {
-	for (int x = 0; x < total_strings; ++x) {
+	for (int x = 0; x < total_strings; ++x)
 		printf("%s\n", string_array[x]);
-	}
 }
 
-int main(int argc, char** argv) {
-	load_strings("C:/Users/Wiiiill/Documents/CSVs/Jan23.csv");
-	show_strings();
-	free(string_array);
-	printf("-------------------------------------------------------------------");
+int convert_to_pennies(char* cp) {
 
+	unsigned int total = 0;
+	unsigned int power = 10;
+	for (char* p = cp; *p != '\0'; p++) {
+		if (isdigit(*p)) {
+			total *= power;
+			total += *p - '0'; //should this be plus?
+		}
+		else { ;; }
+	}
+	return total;
+}
+
+char* penny_formatter (int pennies) {
+	int digits_no = ((log10(pennies)+1)>2) ? log10(pennies) + 1:3;
+	int carr_size = digits_no + 2;
+	char* carr = calloc(carr_size, sizeof(char));
+	int decimal_insert  = (digits_no - 2>0) ? digits_no-2 : 1;
+	int power = digits_no;
+	for (int i = 0; i < carr_size; ++i) {
+		if (i == digits_no + 1)
+			*(carr + i) = '\0';
+		else if (i == decimal_insert)
+			*(carr + i) = '.';
+		else {
+			int p = pow(10, power-1);
+			int num = (pennies / p)%10;
+			*(carr + i) = num + '0';
+			--power;
+		}
+	}
+	return carr;
+}
+
+void show_food_costs() {
+	unsigned int total = 0;
+	printf("===================================================================\n");
+	for (int i = 4; i < total_strings; i += 8) {
+		for (int x = 0; x < sizeof(shop_names) / sizeof(shop_names[0]); ++x) {
+			//atoi bit is to deal with blanks
+			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[i + 1])+1!=1)) {
+				printf("%s\t%s\t\t%s\n", string_array[i-4],string_array[i], string_array[i + 1]);
+				total += convert_to_pennies(string_array[i + 1]);
+			}
+			else;
+		}
+	}
+	printf("-------------------------------------------------------------------\n");
+	printf("Total: \x9C%s\n", penny_formatter(total));
+	printf("===================================================================\n");
+}
+
+int main(int argc, char* argv[]) {
+	//void load_strings(char*);
+	//void show_food_costs();
+	//void free(void*);
+	int x = 20;
+	int y = 010;
+	printf("%s\n", penny_formatter(567));
+	printf("%s\n", penny_formatter(12345));
+	printf("%s\n", penny_formatter(001));
+	printf("%s\n", penny_formatter(021));
 	return 0;
 }
