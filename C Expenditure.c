@@ -4,12 +4,11 @@
 #include <stdio.h>
 #include <stdlib.h>
 #include <string.h>
-#include <math.h>>
+#include <math.h>
+#include <ctype.h>
 
 //TO DO
-//atof not working like it should
 //food bit hard-coded, want it to find column name from header
-//if debit is blank ignore line
 //do ternary to get the line columns lined up
 
 char** string_array;
@@ -54,9 +53,10 @@ int get_row_count(char* file_name) {
 void load_strings(char* file_name) {
 	FILE* file;
 	file = fopen(file_name, "r");
-	if (file == NULL)
-		printf("%s\n", "Null pointer");
-	fclose(file);
+	if (file == NULL) {
+		printf("No such file exists!\n- %s -\n",file_name);
+		return;
+	}
 
 	total_strings = get_row_count(file_name) * get_column_count(file_name);
 	int c;
@@ -94,7 +94,7 @@ int convert_to_pennies(char* cp) {
 	for (char* p = cp; *p != '\0'; p++) {
 		if (isdigit(*p)) {
 			total *= power;
-			total += *p - '0'; //should this be plus?
+			total += *p - '0';
 		}
 		else { ;; }
 	}
@@ -127,10 +127,13 @@ void show_food_costs() {
 	printf("===================================================================\n");
 	for (int i = 4; i < total_strings; i += 8) {
 		for (int x = 0; x < sizeof(shop_names) / sizeof(shop_names[0]); ++x) {
+			const short DATE = i - 4;
+			const short SHOP = i;
+			const short SPEND = i + 1;
 			//atoi bit is to deal with blanks
-			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[i + 1])+1!=1)) {
-				printf("%s\t%s\t\t%s\n", string_array[i-4],string_array[i], string_array[i + 1]);
-				total += convert_to_pennies(string_array[i + 1]);
+			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[SPEND])+1!=1)) {
+				printf("%s\t%25s\t\t\x9C%s\n", string_array[DATE],string_array[SHOP], string_array[SPEND]);
+				total += convert_to_pennies(string_array[SPEND]);
 			}
 			else;
 		}
@@ -140,15 +143,43 @@ void show_food_costs() {
 	printf("===================================================================\n");
 }
 
+void save_food_costs(char*name) {
+	unsigned int total = 0;
+	FILE* file;
+	file = fopen(name, "w");
+	if (file==NULL){
+		printf("File not saved!\n- %s -\n",name);
+		return;
+	}
+	fprintf(file,"===================================================================\n");
+	for (int i = 4; i < total_strings; i += 8) {
+		for (int x = 0; x < sizeof(shop_names) / sizeof(shop_names[0]); ++x) {
+			const short DATE = i - 4;
+			const short SHOP = i;
+			const short SPEND = i + 1;
+			//atoi bit is to deal with blanks
+			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
+				fprintf(file, "%s\t%25s\t\t£%s\n", string_array[DATE], string_array[SHOP], string_array[SPEND]);
+				total += convert_to_pennies(string_array[SPEND]);
+			}
+		}
+	}
+	fprintf(file,"-------------------------------------------------------------------\n");
+	fprintf(file,"Total: £%s\n", penny_formatter(total));
+	fprintf(file,"===================================================================\n");
+	fclose(file);
+}
+
 int main(int argc, char* argv[]) {
-	//void load_strings(char*);
-	//void show_food_costs();
-	//void free(void*);
-	int x = 20;
-	int y = 010;
-	printf("%s\n", penny_formatter(567));
-	printf("%s\n", penny_formatter(12345));
-	printf("%s\n", penny_formatter(001));
-	printf("%s\n", penny_formatter(021));
+	const int CSV_INPUT = 1;
+	const int FOOD_OUTPUT = 2;
+	void load_strings(char*);
+	void free(void*);
+	void save_food_costs(char*);
+
+	load_strings(argv[CSV_INPUT]);
+	save_food_costs(argv[FOOD_OUTPUT]);
+	free(string_array);
+
 	return 0;
 }
