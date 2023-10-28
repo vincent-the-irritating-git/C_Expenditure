@@ -14,12 +14,6 @@
 char** string_array;
 int total_strings=0;
 char* shop_names[3] = { "TESCO STORES","ALDI","CO-OPERATIVE" };
-/* I don't this does anything anymore. Looks like it was deprecated*/ 
-//char* copy_string(char temp[], int temp_size) {
-//	char* new_word= malloc(sizeof(char) * temp_size);
-//	strcpy(new_word, temp);
-//	return new_word;
-//}
 
 void blank_array(char temp[]) {
 	temp[0] = '\0';
@@ -152,21 +146,24 @@ void save_food_costs(char*name) {
 		return;
 	}
 	fprintf(file,"===================================================================\n");
+	//the string array loop
 	for (int i = 4; i < total_strings; i += 8) {
+		const short DATE = i - 4;
+		const short SHOP = i;
+		const short SPEND = i + 1;
+		//the shop name loop
 		for (int x = 0; x < sizeof(shop_names) / sizeof(shop_names[0]); ++x) {
-			const short DATE = i - 4;
-			const short SHOP = i;
-			const short SPEND = i + 1;
+		
 			//atoi bit is to deal with blanks
 			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
-				fprintf(file, "%s\t%25s\t\t£%s\n", string_array[DATE], string_array[SHOP], string_array[SPEND]);
+				fprintf(file, "%s\t%25s\t\t£%6s\n", string_array[DATE], string_array[SHOP], string_array[SPEND]);
 				total += convert_to_pennies(string_array[SPEND]);
 			}
 		}
 	}
-	fprintf(file,"-------------------------------------------------------------------\n");
-	fprintf(file,"Total: £%s\n", penny_formatter(total));
-	fprintf(file,"===================================================================\n");
+	fprintf(file, "-------------------------------------------------------------------\n");
+	fprintf(file, "Total: £%s\n", penny_formatter(total));
+	fprintf(file, "===================================================================\n");
 	fclose(file);
 }
 
@@ -177,9 +174,10 @@ int main(int argc, char* argv[]) {
 	void free(void*);
 	void save_food_costs(char*);
 
+	////load_strings("c:/users/wiiiill/documents/csvs/may23.csv");
+	////save_food_costs("c:/users/wiiiill/documents/food_docs/test2.txt");
 	load_strings(argv[CSV_INPUT]);
 	save_food_costs(argv[FOOD_OUTPUT]);
 	free(string_array);
-
 	return 0;
 }
