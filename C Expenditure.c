@@ -12,6 +12,7 @@
 //food bit hard-coded, want it to find column name from header
 //do ternary to get the line columns lined up
 
+
 struct word_array {
 	char** vals;
 	short count;
@@ -35,8 +36,8 @@ struct word_array display_words = {
 	.count = 0
 };
 
-struct word_array* filter = &filter_words;
-struct word_array* display = &display_words;
+struct word_array* filt_words = &filter_words;
+struct word_array* disp_words = &display_words;
 
 void blank_array(char temp[]) {
 	temp[0] = '\0';
@@ -117,6 +118,7 @@ int convert_to_pennies(char* cp) {
 	return total;
 }
 
+	//should copy carr into a stack var and free it
 char* penny_formatter(int pennies) {
 	int digits_no = ((log10(pennies) + 1) > 2) ? log10(pennies) + 1 : 3;
 	int carr_size = digits_no + 2;
@@ -138,7 +140,7 @@ char* penny_formatter(int pennies) {
 	return carr;
 }
 
-void load_items_to_filter_with(char* name) {
+void load_filter_struct_with_list_of_filter_words(char* name) {
 	FILE* f;
 	int c,count=0;
 	char buff [100];
@@ -146,8 +148,8 @@ void load_items_to_filter_with(char* name) {
 	c = count;
 
 	f = fopen(name, "r");
-	filter->count=get_column_count(name);
-	filter->vals = malloc(sizeof(char*) * filter->count);
+	filt_words->count=get_column_count(name);
+	filt_words->vals = malloc(sizeof(char*) * filt_words->count);
 
 	for (; (c = getc(f)) != EOF;)
 		if (c != ',' && c!='\n') {
@@ -156,12 +158,13 @@ void load_items_to_filter_with(char* name) {
 		}
 		else {
 			buff[count] = '\0';
-			*(filter->vals) = malloc(sizeof(char) * count);
-			strcpy(*(filter->vals++), buff);
+			*(filt_words->vals) = malloc(sizeof(char) * count);
+			strcpy(*(filt_words->vals++), buff);
 			count = 0;
 			buff[0] = '\0';
 		}
-	filter->vals = filter->vals - filter->count;
+	//reset filter pointer
+	filt_words->vals = filt_words->vals - filt_words->count;
 	fclose(f);
 }
 
@@ -169,25 +172,34 @@ void load_costs_array() {
 	//char* array, make tot the one at the end
 	unsigned int total = 0;
 	char* temp[MAX_LENGTH];
-	printf("===================================================================\n");
-	for (int i = CLMN_DESCRIPTION; i < total_strings; i += ROW_LENGTH) {
 
+	for (int i = CLMN_DESCRIPTION; i < total_strings; i += ROW_LENGTH) {
+		//this is where the date, description and spend will be in the array
+		//in relation to i
 		const short DATE = i + (CLMN_DATE - CLMN_DESCRIPTION); 			//-4
-		const short SHOP = i + (CLMN_DESCRIPTION - CLMN_DESCRIPTION);	//0
+		const short DESC = i + (CLMN_DESCRIPTION - CLMN_DESCRIPTION);	//0
 		const short SPEND = i + (CLMN_DEBIT - CLMN_DESCRIPTION);		//1
 										//
-		for (int x = 0; x < filter->count; ++x) {
+		for (int x = 0; x < filt_words->count; ++x) {
 			//atoi bit is to deal with blanks
-			if (strstr(string_array[i], *(filter->vals + x)) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
-				printf("%s\t%25s\t\t\x9C%s\n", string_array[DATE], string_array[SHOP], string_array[SPEND]);
+			if (strstr(string_array[DESC], *(filt_words->vals + x)) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
+				temp[disp_words->count++] = string_array[DATE];
+				temp[disp_words->count++] = string_array[DESC];
+				temp[disp_words->count++] = string_array[SPEND];
+
 				total += convert_to_pennies(string_array[SPEND]);
 			}
-			else;
+			else
+				;
 		}
 	}
-	printf("-------------------------------------------------------------------\n");
-	printf("Total: \x9C%s\n", penny_formatter(total));
-	printf("===================================================================\n");
+	//+1 for the total spend
+	disp_words->vals = malloc(sizeof(char*) * ++(disp_words->count));
+	for (int x = 0; x < disp_words->count-1; ++x) {
+		*(disp_words->vals++) = temp[x];
+	}
+	*(disp_words->vals) = penny_formatter(total);
+	disp_words->vals = disp_words->vals - (disp_words->count-1);
 }
 
 //void save_food_costs(char*name) {
@@ -228,20 +240,22 @@ int main(int argc, char* argv[]) {
 	void load_strings(char*);
 	void free(void*);
 	void save_food_costs(char*);
-	void load_items_to_filter_with(char*);
-
+	void load_filter_struct_with_list_of_filter_words(char*);
+	
 	//show_food_costs();
 	//save_food_costs("c:/users/wiiiill/documents/food_docs/test2.txt");
 
 	//free(string_array);
 
 	load_strings("c:/users/wiiiill/documents/csvs/January23.csv");
-	load_items_to_filter_with("C:/test.txt");
+	load_filter_struct_with_list_of_filter_words("C:/test.txt");
 	load_costs_array();
+	while (disp_words->count-->0)
+		printf("%s\n", *(disp_words->vals++));
 	//load_strings(argv[CSV_INPUT]);
-	//load_items_to_filter_with(argv[FILTER_WORDS]);
+	//load_filter_struct_with_list_of_filter_words(argv[FILTER_WORDS]);
 	//save_food_costs(argv[FOOD_OUTPUT]);
 	free(string_array);
-	free(filter->vals);
+	free(filt_words->vals);
 	return 0;
 }
