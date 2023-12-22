@@ -6,7 +6,9 @@
 #include <string.h>
 #include <math.h>
 #include <ctype.h>
-#define MAX_LENGTH 100
+#define MAX_LENGTH 1000
+#define TRUE 1
+#define FALSE 0
 
 //TO DO
 //food bit hard-coded, want it to find column name from header
@@ -104,8 +106,19 @@ void show_strings() {
 		printf("%s\n", string_array[x]);
 }
 
-int convert_to_pennies(char* cp) {
+unsigned short does_charp_contain_decimal_point(char* cp) {
 
+	unsigned int b = FALSE;
+
+	for (char* p = cp; *p != '\0'; p++)
+		if (*p == '.')
+			b = TRUE;
+
+	return b;
+}
+
+int convert_to_pennies(char* cp) {
+	const unsigned int no_decimal_point = 100;
 	unsigned int total = 0;
 	unsigned int power = 10;
 	for (char* p = cp; *p != '\0'; p++) {
@@ -115,6 +128,8 @@ int convert_to_pennies(char* cp) {
 		}
 		else { ;; }
 	}
+	if (!does_charp_contain_decimal_point(cp))
+		total *= no_decimal_point;
 	return total;
 }
 
@@ -148,10 +163,16 @@ void load_filter_struct_with_list_of_filter_words(char* name) {
 	c = count;
 
 	f = fopen(name, "r");
+
+	if (f == NULL) {
+		printf("File not found!\n- %s -\n", name);
+		return;
+	}
+
 	filt_words->count=get_column_count(name);
 	filt_words->vals = malloc(sizeof(char*) * filt_words->count);
 
-	for (; (c = getc(f)) != EOF;)
+	while ((c = getc(f)) != EOF)
 		if (c != ',' && c!='\n') {
 			buff[count] = c;
 			++count;
@@ -179,10 +200,10 @@ void load_costs_array() {
 		const short DATE = i + (CLMN_DATE - CLMN_DESCRIPTION); 			//-4
 		const short DESC = i + (CLMN_DESCRIPTION - CLMN_DESCRIPTION);	//0
 		const short SPEND = i + (CLMN_DEBIT - CLMN_DESCRIPTION);		//1
-										//
+
 		for (int x = 0; x < filt_words->count; ++x) {
 			//atoi bit is to deal with blanks
-			if (strstr(string_array[DESC], *(filt_words->vals + x)) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
+			if (strstr(string_array[DESC], filt_words->vals[x]) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
 				temp[disp_words->count++] = string_array[DATE];
 				temp[disp_words->count++] = string_array[DESC];
 				temp[disp_words->count++] = string_array[SPEND];
@@ -195,43 +216,27 @@ void load_costs_array() {
 	}
 	//+1 for the total spend
 	disp_words->vals = malloc(sizeof(char*) * ++(disp_words->count));
-	for (int x = 0; x < disp_words->count-1; ++x) {
+	for (int x = 0; x < disp_words->count-1; ++x)
 		*(disp_words->vals++) = temp[x];
-	}
+
 	*(disp_words->vals) = penny_formatter(total);
 	disp_words->vals = disp_words->vals - (disp_words->count-1);
 }
 
-//void save_food_costs(char*name) {
-//	unsigned int total = 0;
-//	FILE* file;
-//	file = fopen(name, "w");
-//	if (file==NULL){
-//		printf("File not saved!\n- %s -\n",name);
-//		return;
-//	}
-//	fprintf(file,"===================================================================\n");
-//	//the string array loop
-//	for (int i = 4; i < total_strings; i += 8) {
-//		const short DATE = i - 4;
-//		const short SHOP = i;
-//		const short SPEND = i + 1;
-//		//the shop name loop
-//		for (int x = 0; x < sizeof(shop_names) / sizeof(shop_names[0]); ++x) {
-//		
-//			//atoi bit is to deal with blanks
-//			if (strstr(string_array[i], shop_names[x]) != NULL && (atoi(string_array[SPEND]) + 1 != 1)) {
-//				fprintf(file, "%s\t%25s\t\t£%6s\n", string_array[DATE], string_array[SHOP], string_array[SPEND]);
-//				total += convert_to_pennies(string_array[SPEND]);
-//			}
-//		}
-//	}
-//	fprintf(file, "-------------------------------------------------------------------\n");
-//	fprintf(file, "Total: £%s\n", penny_formatter(total));
-//	fprintf(file, "===================================================================\n");
-//	fclose(file);
-//}
+void save_results_to_text_file(char* filename) {
+	FILE* f;
+	f = fopen(filename, "w");
 
+	if (f==NULL){
+		printf("File not saved!\n- %s -\n",filename);
+		return;
+	}
+
+	for (int x=0; x< disp_words->count-1;x=x+3)
+		fprintf(f, "%s\t%25s\t\t£%6s\n", disp_words->vals[x], disp_words->vals[x+1], disp_words->vals[x+2]);
+
+	fprintf(f, "==========================================================\nTOTAL: £%s\n==========================================================", disp_words->vals[disp_words->count-1]);
+}
 
 int main(int argc, char* argv[]) {
 	const short CSV_INPUT = 1;
@@ -240,22 +245,18 @@ int main(int argc, char* argv[]) {
 	void load_strings(char*);
 	void free(void*);
 	void save_food_costs(char*);
+	void load_costs_array();
 	void load_filter_struct_with_list_of_filter_words(char*);
-	
-	//show_food_costs();
-	//save_food_costs("c:/users/wiiiill/documents/food_docs/test2.txt");
+	void save_results_to_text_file(char*);
 
-	//free(string_array);
-
-	load_strings("c:/users/wiiiill/documents/csvs/January23.csv");
-	load_filter_struct_with_list_of_filter_words("C:/test.txt");
+	load_strings(argv[CSV_INPUT]);
+	load_filter_struct_with_list_of_filter_words(argv[FILTER_WORDS]);
 	load_costs_array();
-	while (disp_words->count-->0)
-		printf("%s\n", *(disp_words->vals++));
-	//load_strings(argv[CSV_INPUT]);
-	//load_filter_struct_with_list_of_filter_words(argv[FILTER_WORDS]);
-	//save_food_costs(argv[FOOD_OUTPUT]);
+	save_results_to_text_file(argv[FOOD_OUTPUT]);
+
+	free(disp_words->vals);
 	free(string_array);
 	free(filt_words->vals);
+
 	return 0;
 }
